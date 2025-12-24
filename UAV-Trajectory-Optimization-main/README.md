@@ -88,18 +88,17 @@ This will:
    - `KPI3.png`: Average Reward
    - `KPI4.png`: Min Max Reward Range
    - `KPI5.png`: Success Rate
-   - `Trajectories_Comparison.png`: Best Trajectories for All Algorithms (visualized on the same grid)
+   - `Trajectories_Comparison.png`: Best Trajectories for the RL Algorithms (visualized on the same grid)
 
 #### Trajectory Visualization
 
-The `Trajectories_Comparison.png` plot provides a visual comparison of the best-performing trajectory from each algorithm on the same 15×15 grid. The plot includes:
+The `Trajectories_Comparison.png` plot provides a visual comparison of the best-performing trajectory from each RL algorithm on the same 15×15 grid. The plot includes:
 
 - **Grid Layout**: 15×15 cell grid matching the simulation environment
 - **Obstacles**: Dark grey rectangular blocks showing impassable areas
 - **Sensor Nodes (SNs)**: Blue circles indicating the locations of all sensor nodes
 - **Start/End Position**: Green square with 'X' marking the starting and landing position (left-bottom corner)
 - **Algorithm Trajectories**: Each algorithm's best trajectory (highest reward episode) is displayed with:
-  - **Random Action**: Red line with circle markers
   - **SARSA**: Blue line with square markers  
   - **Q-Learning**: Green line with triangle markers
 - **Legend**: Shows algorithm name, episode number, and reward value for each trajectory
