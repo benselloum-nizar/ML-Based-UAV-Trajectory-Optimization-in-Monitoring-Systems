@@ -33,16 +33,6 @@ import os
 import numpy as np
 from time import strftime, localtime
 
-###########################################
-## switches
-###########################################
-SHOW_ANIMATION_FLAG = False   # to show animation?
-LOAD_DATA_FLAG      = False   # to load the model: f"{ai.name}-load"
-SAVE_DATA_FLAG      = False   # to save the model: f"{ai.name}-[{date}][{time}]"
-EXPLORATION_FLAG    = False   # to perform exploration?
-SAMPLE_FLAG         = False   # to sample the model and show result on terminal
-SAMPLE_INTERVAL     = 10000   # specify how many episodes before a sample is taken
-FPS                 = 10      # initial frame-per-second setting
 
 ###########################################
 ## Run mode, pick one
@@ -65,7 +55,7 @@ FPS                 = 10      # initial frame-per-second setting
 
 ## testing mode
 SHOW_ANIMATION_FLAG  = False  # show animation
-FPS                  = 120     # with slow motion
+FPS                  = 10     # with slow motion
 LOAD_DATA_FLAG       = True   # load existing model for testing
 SAVE_DATA_FLAG       = True    # save
 EXPLORATION_FLAG     = False  # don't explore anymore, only exploit

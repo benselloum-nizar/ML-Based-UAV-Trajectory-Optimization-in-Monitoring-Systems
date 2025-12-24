@@ -36,6 +36,7 @@ This codebase has been modified from the original implementation to adapt it to 
   - KPI3.png: Average Reward
   - KPI4.png: Min Max Reward Range
   - KPI5.png: Success Rate
+- **Trajectory Visualization**: Added trajectory comparison plot (`Trajectories_Comparison.png`) that displays the best trajectory from each algorithm on the same 15×15 grid, showing obstacles, sensor nodes, and algorithm paths for visual comparison
 - **Pandas Integration**: Used pandas DataFrames for improved data handling and analysis
 - Automatic discovery of result files from the `results/` directory
 - **Note on Algorithms**: The codebase implements Q-Learning (from the paper) and SARSA (added as an additional tabular method). DQN (Deep Q-Network) from the paper is not implemented in this version.
@@ -80,12 +81,34 @@ python compare_algorithms.py
 This will:
 1. Automatically find all result JSON files in the `results/` directory
 2. Generate 5 separate KPI comparison plots
-3. Save plots to `results/plots/`:
+3. Generate a trajectory comparison plot showing the best trajectory for each algorithm
+4. Save plots to `results/plots/`:
    - `KPI1.png`: Reward After Episodes
    - `KPI2.png`: Average Flying Time
    - `KPI3.png`: Average Reward
    - `KPI4.png`: Min Max Reward Range
    - `KPI5.png`: Success Rate
+   - `Trajectories_Comparison.png`: Best Trajectories for All Algorithms (visualized on the same grid)
+
+#### Trajectory Visualization
+
+The `Trajectories_Comparison.png` plot provides a visual comparison of the best-performing trajectory from each algorithm on the same 15×15 grid. The plot includes:
+
+- **Grid Layout**: 15×15 cell grid matching the simulation environment
+- **Obstacles**: Dark grey rectangular blocks showing impassable areas
+- **Sensor Nodes (SNs)**: Blue circles indicating the locations of all sensor nodes
+- **Start/End Position**: Green square with 'X' marking the starting and landing position (left-bottom corner)
+- **Algorithm Trajectories**: Each algorithm's best trajectory (highest reward episode) is displayed with:
+  - **Random Action**: Red line with circle markers
+  - **SARSA**: Blue line with square markers  
+  - **Q-Learning**: Green line with triangle markers
+- **Legend**: Shows algorithm name, episode number, and reward value for each trajectory
+
+This visualization helps you understand:
+- How each algorithm navigates around obstacles
+- Which paths algorithms take to serve sensor nodes
+- The efficiency and strategy differences between algorithms
+- Whether algorithms successfully return to the landing position
 
 ### Loading Pretrained Models
 
@@ -114,7 +137,8 @@ UAV-Trajectory-Optimization-main/
 │       ├── KPI2.png
 │       ├── KPI3.png
 │       ├── KPI4.png
-│       └── KPI5.png
+│       ├── KPI5.png
+│       └── Trajectories_Comparison.png
 ├── rl/                       # Reinforcement learning algorithms
 │   ├── qlearning.py
 │   ├── sarsa.py
@@ -215,4 +239,7 @@ Note that the paper also applies penalty when the UAV moves outside of the map. 
 
 ## Results and Analysis
 
-After running the algorithms, you can analyze the results using the comparison script which generates KPI plots. The plots will show the performance comparison between Random Action, SARSA, and Q-Learning algorithms across different metrics.
+After running the algorithms, you can analyze the results using the comparison script which generates KPI plots and trajectory visualizations. The analysis includes:
+
+- **KPI Plots**: Performance comparison between Random Action, SARSA, and Q-Learning algorithms across different metrics (reward, flight time, success rate, etc.)
+- **Trajectory Visualization**: Visual comparison of the best trajectory from each algorithm on the same grid, showing how each algorithm navigates the environment, avoids obstacles, and serves sensor nodes

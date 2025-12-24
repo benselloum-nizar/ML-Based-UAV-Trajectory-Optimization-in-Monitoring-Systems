@@ -71,6 +71,21 @@ def load_results_from_directory(results_dir="results"):
                 'terminated': data.get('terminated', [])
             })
             
+            # Extract best_trajectory data
+            best_traj = data.get('best_trajectory', {})
+            if best_traj:
+                traj = best_traj.get('trajectory', [])
+                if traj:
+                    print(f"  Found best trajectory: Episode {best_traj.get('episode', 'N/A')}, "
+                          f"Reward: {best_traj.get('reward', 0):.2f}, "
+                          f"Length: {len(traj)} positions")
+                    if len(traj) > 0:
+                        print(f"    First position: {traj[0]}, Last position: {traj[-1]}")
+                else:
+                    print(f"  Warning: best_trajectory exists but trajectory list is empty")
+            else:
+                print(f"  Warning: No best_trajectory data found in JSON")
+            
             # Add summary statistics as attributes
             df.attrs = {
                 'algorithm': algorithm_name,
@@ -80,7 +95,8 @@ def load_results_from_directory(results_dir="results"):
                 'min_reward': data.get('min_reward', df['reward'].min()),
                 'max_reward': data.get('max_reward', df['reward'].max()),
                 'success_rate': data.get('success_rate', df['terminated'].sum() / len(df) * 100),
-                'avg_flight_time': data.get('avg_flight_time', df['flight_time'].mean())
+                'avg_flight_time': data.get('avg_flight_time', df['flight_time'].mean()),
+                'best_trajectory': best_traj
             }
             
             dataframes[algorithm_name] = df
@@ -265,6 +281,171 @@ def create_kpi_plots(dataframes, output_dir="results/plots"):
     
     print(f"\nAll KPI plots saved to {output_path}/")
 
+def create_trajectory_plot(dataframes, output_dir="results/plots"):
+    '''
+    Create a grid plot showing the best trajectory for each algorithm.
+    The plot shows the 15x15 grid with obstacles, SNs, and trajectories.
+    
+    dataframes: Dictionary mapping algorithm names to DataFrames (with trajectory data in attrs)
+    output_dir: Directory to save plots
+    '''
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Resolve output directory relative to script location
+    output_path = os.path.join(script_dir, output_dir)
+    os.makedirs(output_path, exist_ok=True)
+    
+    # Grid parameters (from uav2dgrid.py)
+    ROWS, COLS = 15, 15
+    
+    # Obstacle positions (from uav2dgrid.py: OBSTACLE.POS_LIST)
+    obstacles = []
+    for x in range(9, 11):
+        for y in range(8, 12):
+            obstacles.append((x, y))
+    
+    # SN positions (from uav2dgrid.py: SN.POS)
+    # Note: SN positions are stored as (col, row) with fractional values
+    sn_positions = [
+        (4.5, 2.5), (11.5, 6.5), (10, 3), (2, 5),
+        (7, 1), (13, 4), (5, 8), (12, 10)
+    ]
+    
+    # Start/End position (left-bottom: col=0, row=14)
+    start_pos = (0, 14)
+    end_pos = (0, 14)
+    
+    # Algorithm colors and styles
+    algo_styles = {
+        'Random Action': {'color': 'red', 'linestyle': '-', 'linewidth': 2, 'alpha': 0.7, 'marker': 'o', 'markersize': 4},
+        'SARSA': {'color': 'blue', 'linestyle': '-', 'linewidth': 2, 'alpha': 0.7, 'marker': 's', 'markersize': 4},
+        'Q-Learning': {'color': 'green', 'linestyle': '-', 'linewidth': 2, 'alpha': 0.7, 'marker': '^', 'markersize': 4}
+    }
+    
+    # Create figure
+    fig, ax = plt.subplots(figsize=(12, 12))
+    
+    # Draw grid
+    for i in range(ROWS + 1):
+        ax.axhline(i - 0.5, color='black', linewidth=0.5, alpha=0.3)
+    for j in range(COLS + 1):
+        ax.axvline(j - 0.5, color='black', linewidth=0.5, alpha=0.3)
+    
+    # Draw obstacles (dark grey)
+    for obs_col, obs_row in obstacles:
+        rect = plt.Rectangle((obs_col - 0.5, obs_row - 0.5), 1, 1, 
+                            facecolor='#464646', edgecolor='black', linewidth=0.5)
+        ax.add_patch(rect)
+    
+    # Draw SNs (blue circles)
+    for sn_col, sn_row in sn_positions:
+        circle = plt.Circle((sn_col, sn_row), 0.3, color='blue', zorder=5)
+        ax.add_patch(circle)
+    
+    # Draw start position (green square with X)
+    start_rect = plt.Rectangle((start_pos[0] - 0.5, start_pos[1] - 0.5), 1, 1, 
+                               facecolor='darkgreen', edgecolor='black', linewidth=1, alpha=0.7)
+    ax.add_patch(start_rect)
+    ax.text(start_pos[0], start_pos[1], 'X', ha='center', va='center', 
+           color='white', fontsize=14, fontweight='bold', zorder=6)
+    
+    # Draw trajectories for each algorithm (only SARSA and Q-Learning)
+    algorithms_to_plot = ['SARSA', 'Q-Learning']
+    plotted_count = 0
+    
+    for algo_name, df in dataframes.items():
+        # Skip Random Action - only plot SARSA and Q-Learning
+        if algo_name not in algorithms_to_plot:
+            print(f"Skipping {algo_name} trajectory (only plotting SARSA and Q-Learning)")
+            continue
+            
+        best_traj_data = df.attrs.get('best_trajectory', {})
+        trajectory = best_traj_data.get('trajectory', [])
+        
+        # Validate trajectory data
+        if not trajectory:
+            print(f"Warning: No trajectory data found for {algo_name}")
+            continue
+            
+        if not isinstance(trajectory, list):
+            print(f"Warning: Trajectory data for {algo_name} is not a list: {type(trajectory)}")
+            continue
+            
+        if len(trajectory) == 0:
+            print(f"Warning: Empty trajectory for {algo_name}")
+            continue
+        
+        # Validate trajectory structure - should be list of [col, row] pairs
+        try:
+            # Extract x (col) and y (row) coordinates
+            # Note: trajectory is stored as [col, row] pairs
+            traj_cols = []
+            traj_rows = []
+            for pos in trajectory:
+                if not isinstance(pos, (list, tuple)) or len(pos) < 2:
+                    print(f"Warning: Invalid position format in {algo_name} trajectory: {pos}")
+                    continue
+                traj_cols.append(float(pos[0]))  # col
+                traj_rows.append(float(pos[1]))   # row
+            
+            if len(traj_cols) == 0:
+                print(f"Warning: No valid positions found in {algo_name} trajectory")
+                continue
+                
+            print(f"Plotting {algo_name}: {len(traj_cols)} positions, Episode {best_traj_data.get('episode', 'N/A')}, Reward: {best_traj_data.get('reward', 0):.2f}")
+            print(f"  First position: [{traj_cols[0]}, {traj_rows[0]}], Last position: [{traj_cols[-1]}, {traj_rows[-1]}]")
+            
+            style = algo_styles.get(algo_name, {'color': 'black', 'linestyle': '-', 'linewidth': 2, 
+                                                'alpha': 0.7, 'marker': 'o', 'markersize': 4})
+            
+            # Plot trajectory line
+            ax.plot(traj_cols, traj_rows, 
+                   color=style['color'], linestyle=style['linestyle'], 
+                   linewidth=style['linewidth'], alpha=style['alpha'],
+                   label=f"{algo_name} (Episode {best_traj_data.get('episode', 'N/A')}, Reward: {best_traj_data.get('reward', 0):.2f})",
+                   zorder=3)
+            
+            # Plot trajectory points (every few steps to avoid clutter)
+            step = max(1, len(trajectory) // 20)  # Show ~20 points max
+            ax.scatter(traj_cols[::step], traj_rows[::step], 
+                      color=style['color'], marker=style['marker'], 
+                      s=style['markersize']**2, alpha=style['alpha']*0.8, zorder=4)
+            
+            # Mark start point with star (only for first algorithm)
+            if plotted_count == 0:
+                ax.scatter([traj_cols[0]], [traj_rows[0]], 
+                          color='yellow', marker='*', s=300, 
+                          edgecolors='black', linewidths=2, zorder=7, label='Start Position')
+            
+            plotted_count += 1
+            
+        except Exception as e:
+            print(f"Error processing trajectory for {algo_name}: {e}")
+            import traceback
+            traceback.print_exc()
+            continue
+    
+    # Set axis properties
+    ax.set_xlim(-0.5, COLS - 0.5)
+    ax.set_ylim(-0.5, ROWS - 0.5)
+    ax.set_aspect('equal')
+    ax.invert_yaxis()  # Invert y-axis so row 0 is at top (like the simulation)
+    ax.set_xlabel('Column', fontsize=12)
+    ax.set_ylabel('Row', fontsize=12)
+    ax.set_title('Best Trajectories Comparison - SARSA vs Q-Learning', fontsize=14, fontweight='bold')
+    ax.legend(loc='upper left', fontsize=10, framealpha=0.9)
+    ax.grid(True, alpha=0.3)
+    
+    if plotted_count == 0:
+        print("Warning: No trajectories were plotted. Check if trajectory data exists in JSON files.")
+        plt.close(fig)
+        return
+    
+    plt.tight_layout()
+    fig.savefig(os.path.join(output_path, 'Trajectories_Comparison.png'), dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    print(f"Saved Trajectories_Comparison.png: Best Trajectories for SARSA and Q-Learning")
+
 if __name__ == "__main__":
     print("="*70)
     print("Algorithm Comparison - KPI Analysis")
@@ -288,6 +469,13 @@ if __name__ == "__main__":
         create_kpi_plots(dataframes)
         
         print("\n" + "="*70)
+        print("Creating trajectory comparison plot...")
+        print("="*70)
+        
+        # Create trajectory plot
+        create_trajectory_plot(dataframes)
+        
+        print("\n" + "="*70)
         print("Comparison complete!")
         print("="*70)
         print(f"\nAll KPI plots saved in: results/plots/")
@@ -296,6 +484,7 @@ if __name__ == "__main__":
         print("  - KPI3.png: Average Reward")
         print("  - KPI4.png: Min Max Reward Range")
         print("  - KPI5.png: Success Rate")
+        print("  - Trajectories_Comparison.png: Best Trajectories for All Algorithms")
         
     except FileNotFoundError as e:
         print(f"\nError: {e}")
