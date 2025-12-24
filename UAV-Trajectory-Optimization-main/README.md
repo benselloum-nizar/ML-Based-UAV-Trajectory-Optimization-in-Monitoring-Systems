@@ -125,7 +125,7 @@ UAV-Trajectory-Optimization-main/
 
 The UAV scenario given the paper is shown below.
 
-<img src="https://github.com/user-attachments/assets/f63f2188-869c-45a6-bce3-106838bc4ad6" width="400" height="450">
+<img src="images/simulation_screenshot.png" width="600" height="600">
 
 ## The Settings
 
