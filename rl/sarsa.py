@@ -33,7 +33,7 @@ class SARSA(RL):
         self.q_table = {}
 
         ## ML hyperparameter
-        self.alpha: float = 0.3  # learning rate (1 while testing to observe the effect)
+        self.alpha: float = 0.6  # learning rate (1 while testing to observe the effect)
         self.gamma: float = 0.9    # discount factor
         #self.epsilon: float = 0.1  # exploration weight, 0=no; 1=full
         self.epsilon = DecayingFloat(value=0.9,factor=1.0-1e-8,minval=0.05)

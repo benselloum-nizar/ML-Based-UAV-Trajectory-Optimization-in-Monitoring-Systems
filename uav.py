@@ -95,8 +95,8 @@ for description in info["description"].values():
 
 ## pick a policy to run
 #ai = RandomAction()
-ai = Q_Learning(len(env.action_space), exploration=EXPLORATION_FLAG)
-#ai = SARSA(len(env.action_space), exploration=EXPLORATION_FLAG)
+#ai = Q_Learning(len(env.action_space), exploration=EXPLORATION_FLAG)
+ai = SARSA(len(env.action_space), exploration=EXPLORATION_FLAG)
 
 print(f"Running simulation using {ai.name} algorithm.")
 
